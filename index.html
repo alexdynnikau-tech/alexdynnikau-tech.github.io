@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ПУБЛИКА</title>
+  <style>
+    :root { --ink:#16130e; --paper:#f3ead8; --red:#c4451d; --muted:#6d6456; --line:#c9b896; --white:#fffaf1; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:system-ui,sans-serif; background:var(--paper); color:var(--ink); line-height:1.5; }
+    .ticker { background:var(--ink); color:var(--paper); overflow:hidden; font-size:12px; padding:8px 0; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+    .mark { width:32px; height:32px; background:var(--ink); color:var(--paper); display:inline-grid; place-items:center; }
+    nav button, .btn { border:0; background:var(--ink); color:var(--paper); padding:8px 12px; font:inherit; cursor:pointer; }
+    .cta { background:var(--red) !important; color:#fff !important; }
+    .ad { border:2px solid var(--red); background:#ffd7b8; margin:12px auto; max-width:1080px; }
+    .ad small { display:flex; justify-content:space-between; padding:6px 10px; font-size:11px; }
+    .ad .box { padding:18px; }
+    .wrap { max-width:1080px; margin:0 auto; padding:12px 16px 64px; }
+    h1 { font-size:clamp(28px,6vw,48px); line-height:1.05; }
+    .k { font-size:12px; color:var(--red); text-transform:uppercase; }
+    .prices { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+    .card, .panel, .note { background:var(--white); border:1px solid var(--line); padding:14px; }
+    .sum { font-size:22px; font-weight:800; }
+    form { display:grid; gap:10px; margin-top:12px; }
+    input,select,textarea { font:inherit; padding:10px; border:1px solid var(--line); }
+    .hide { display:none !important; }
+    code { word-break:break-all; }
+  </style>
+</head>
+<body>
+  <div class="ticker">Спонсор выпуска — Александр · Оплата только Ethereum</div>
+  <header>
+    <strong><span class="mark">П</span> ПУБЛИКА</strong>
+    <nav>
+      <button type="button" onclick="show('feed')">Лента</button>
+      <button type="button" onclick="show('ads')">Тарифы</button>
+      <button type="button" class="cta" onclick="show('pay')">Оплата ETH</button>
+      <button type="button" onclick="show('admin')">Админ</button>
+    </nav>
+  </header>
+  <section class="ad"><small>Реклама · A1</small><div class="box"><b>Александр</b><div>Меня видно всем, кто открыл этот сайт.</div></div></section>
+  <main class="wrap">
+    <section id="view-feed">
+      <p class="k">Публичный сайт</p>
+      <h1>Публика с оплатой в Ethereum</h1>
+      <p>Оплата только ETH на адрес <code>0xD1c95BDAEc3E7C1DE4D8C7c547d942Ead23c7D98</code></p>
+    </section>
+    <section id="view-ads" class="hide">
+      <h1>Тарифы</h1>
+      <div class="prices">
+        <div class="card">Шапка<div class="sum">12 900 ₽</div></div>
+        <div class="card">Сайдбар<div class="sum">19 400 ₽</div></div>
+        <div class="card">Натив<div class="sum">8 500 ₽</div></div>
+        <div class="card">Спонсор<div class="sum">34 000 ₽</div></div>
+      </div>
+      <form id="order-form">
+        <input name="brand" required placeholder="Бренд">
+        <input name="contact" required placeholder="Контакт">
+        <select name="slot"><option value="leaderboard">Шапка</option><option value="sidebar">Сайдбар</option><option value="native">Натив</option><option value="sponsor">Спонсор</option></select>
+        <textarea name="copy" placeholder="Текст рекламы"></textarea>
+        <button class="btn" type="submit">Заявка</button>
+      </form>
+      <div id="order-note" class="note hide"></div>
+    </section>
+    <section id="view-pay" class="hide">
+      <h1>Оплата Ethereum</h1>
+      <p>Сеть Ethereum Mainnet</p>
+      <p><code>0xD1c95BDAEc3E7C1DE4D8C7c547d942Ead23c7D98</code></p>
+      <form id="pay-form"><input name="id" id="pay-id" placeholder="PB-..."><button class="btn" type="submit">Счёт</button></form>
+      <div id="pay-note" class="note hide"></div>
+    </section>
+    <section id="view-admin" class="hide">
+      <h1>Админ</h1>
+      <form id="gate"><input id="token" value="publika"><button class="btn" type="submit">Открыть</button></form>
+      <div id="board"></div>
+    </section>
+  </main>
+<script>
+const PRICES={leaderboard:12900,sidebar:19400,native:8500,sponsor:34000};
+const ETH="0xD1c95BDAEc3E7C1DE4D8C7c547d942Ead23c7D98";
+const KEY="publika-web";
+function db(){const r=localStorage.getItem(KEY);return r?JSON.parse(r):{orders:[],slots:{}};}
+function save(d){localStorage.setItem(KEY,JSON.stringify(d));}
+function show(n){['feed','ads','pay','admin'].forEach(id=>document.getElementById('view-'+id).classList.toggle('hide',id!==n));}
+function money(n){return new Intl.NumberFormat('ru-RU').format(n)+' \u20bd';}
+document.getElementById('order-form').onsubmit=e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target).entries());const d=db();const id='PB-'+Date.now().toString(36).toUpperCase();d.orders.unshift({id,...f,price:PRICES[f.slot],status:'pending'});save(d);document.getElementById('pay-id').value=id;const n=document.getElementById('order-note');n.classList.remove('hide');n.innerHTML='<b>'+id+'</b> '+money(PRICES[f.slot]);show('pay');};
+document.getElementById('pay-form').onsubmit=e=>{e.preventDefault();const n=document.getElementById('pay-note');n.classList.remove('hide');n.innerHTML='ETH: <code>'+ETH+'</code>';};
+document.getElementById('gate').onsubmit=e=>{e.preventDefault();if(document.getElementById('token').value!=='publika'){document.getElementById('board').textContent='\u041dет';return;}const d=db();document.getElementById('board').innerHTML=(d.orders||[]).map(o=>'<div class="panel">'+o.id+' '+o.brand+' '+money(o.price)+'</div>').join('')||'Нет заявок';};
+</script>
+</body></html>
